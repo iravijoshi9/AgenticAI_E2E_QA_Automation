@@ -1,1 +1,1 @@
-# AgenticAI_E2E_QA_Autoamation
+# AgenticAI_E2E_QA_Automation
