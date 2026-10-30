@@ -1,0 +1,32 @@
+- generic [ref=f8e476]:
+  - generic [ref=f8e477]:
+    - banner [ref=f8e478]:
+      - generic [ref=f8e479]:
+        - generic [ref=f8e480]:
+          - button "Open Menu" [ref=f8e481] [cursor=pointer]
+          - img "Open Menu" [ref=f8e482]
+        - generic [ref=f8e483]: Swag Labs
+        - button "Cart, 1 items" [ref=f8e486]:
+          - generic [ref=f8e487]: "1"
+      - generic [ref=f8e488]: "Checkout: Your Information"
+    - main [ref=f8e490]:
+      - form "Checkout information" [ref=f8e492]:
+        - generic [ref=f8e493]:
+          - textbox "First Name" [ref=f8e495]
+          - textbox "Last Name" [ref=f8e497]
+          - textbox "Zip/Postal Code" [ref=f8e499]
+        - generic [ref=f8e501]:
+          - button "Cancel" [ref=f8e502] [cursor=pointer]
+          - button "Continue" [ref=f8e503] [cursor=pointer]
+  - contentinfo [ref=f8e504]:
+    - list [ref=f8e505]:
+      - listitem [ref=f8e506]:
+        - link "X" [ref=f8e507] [cursor=pointer]:
+          - /url: https://x.com/saucelabs
+      - listitem [ref=f8e508]:
+        - link "Facebook" [ref=f8e509] [cursor=pointer]:
+          - /url: https://www.facebook.com/saucelabs
+      - listitem [ref=f8e510]:
+        - link "LinkedIn" [ref=f8e511] [cursor=pointer]:
+          - /url: https://www.linkedin.com/company/sauce-labs/
+    - generic [ref=f8e512]: © 2026 Sauce Labs. All Rights Reserved. Terms of Service | Privacy Policy

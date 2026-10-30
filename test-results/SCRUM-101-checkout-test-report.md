@@ -1,146 +1,113 @@
 # SCRUM-101 Checkout Test Execution Report
 
+**Execution date:** 2026-10-28  
 **Application:** https://www.saucedemo.com  
-**Execution date:** 2026-10-26  
-**Automation:** Playwright 1.64.1  
-**Browsers:** Chromium, Firefox, WebKit (Safari engine)  
-**Test account:** `standard_user` (password omitted)
+**Browsers:** Chromium, Firefox, WebKit  
+**Viewport:** Desktop and 390 x 844 mobile viewport  
+**Test account:** `standard_user` (password intentionally omitted)
 
-## 1. Executive Summary
+## Executive Summary
 
-The checkout happy path, required-field validation, authentication guard, cancellation from the information step, and mobile layout were verified. Four product behavior gaps remain against the story/business rules: the cart has no total, invalid postal characters are accepted, checkout is allowed with an empty cart, and overview cancellation returns to inventory instead of the cart.
+The test plan defines 10 scenarios. All 10 were manually explored, and all 10 were automated and run in Chromium, Firefox, and WebKit (30 browser/test executions).
+
+The final Playwright run completed successfully with **30 accepted outcomes and 0 unexpected failures**. This includes **18 passing test outcomes and 12 expected failures**: four confirmed application defects, each asserted in all three browser projects. The overall quality status is **FAIL / remediation required**, because AC1 and AC5 and two checkout business rules are not met.
 
 | Measure | Result |
 |---|---:|
-| Planned scenarios | 10 |
-| Manual scenarios exercised | 10 |
-| Automated scenarios | 10 |
-| Final browser executions | 30 (10 per project) |
-| Final unexpected automation failures | 0 |
-| Confirmed defects | 4 |
+| Scenarios planned | 10 |
+| Scenarios manually explored | 10 |
+| Automated executions | 30 (10 scenarios x 3 browser projects) |
+| Final passing outcomes | 18 |
+| Final expected-failure outcomes | 12 |
+| Unexpected automation failures | 0 |
+| Confirmed application defects | 4 |
 
-Four defect tests remain marked as expected failures with assertions intact. A passing Playwright run means those tests still detected their documented product defects; it does not mean the defects are fixed.
+## Manual Test Results
 
-**Overall status: FAIL.** SCRUM-101 is not release-ready until the four logged product defects are resolved. **Blocked: 0 scenarios.**
+| # | Scenario | Result | Observation |
+|---|---|---|---|
+| 1 | Review cart item details and total | **FAIL** | Both products, descriptions, quantities, and prices were present. The cart did not display the required $39.98 subtotal/total. See [cart review](./evidence/cart-review.png). |
+| 2 | Require first name when fields are empty | **PASS** | Continue was blocked with “First Name is required”. See [required-field error](./evidence/required-first-name-error.png). |
+| 3 | Require last name when first name is provided | **PASS** | Continue was blocked with “Last Name is required”. |
+| 4 | Require postal code when names are provided | **PASS** | Continue was blocked with “Postal Code is required”. |
+| 5 | Reject invalid checkout information | **FAIL** | Postal value `#$%` was accepted and the application navigated to the overview. See [invalid postal code accepted](./evidence/invalid-postal-accepted.png). |
+| 6 | Review overview and cancel to cart | **FAIL** | Payment/shipping details and totals were correct ($39.98 subtotal, $3.20 tax, $43.18 total), but Cancel returned to inventory instead of the cart. See [order overview](./evidence/order-overview-valid.png). |
+| 7 | Complete order and clear cart | **PASS** | Finish showed the success message, the cart was empty, and Back Home returned to inventory. See [order confirmation](./evidence/order-confirmation.png). |
+| 8 | Cancel checkout information and preserve cart | **PASS** | Cancel returned to the cart and preserved the selected product. |
+| 9 | Prevent checkout without authentication or cart items | **PARTIAL / FAIL** | Direct unauthenticated access redirected to login. With an empty cart, Checkout remained enabled and opened the information form. See [empty cart](./evidence/empty-cart-checkout-available.png). |
+| 10 | Keep checkout usable on mobile | **PASS** | At 390 x 844, the information, overview, and confirmation pages had no horizontal document overflow; primary controls remained visible and usable. See [mobile information](./evidence/mobile-checkout-information.png), [mobile overview](./evidence/mobile-order-overview.png), and [mobile confirmation](./evidence/mobile-order-confirmation.png). |
 
-### Execution counts
+### Exploratory observations
 
-| Measure | Planned | Executed | Result |
-|---|---:|---:|---|
-| Test scenarios | 10 | 10 manual + 10 automated scenarios | 100% of planned scenarios exercised |
-| Final browser executions | 30 | 30 | 10 each on Chromium, Firefox, and WebKit |
-| Manual scenarios | 10 | 10 | 6 PASS, 4 FAIL |
-| Automation suite | 1 suite / 10 tests | 30 browser-test executions | 6 tests pass normally and 4 known-defect tests fail as expected per browser |
-| Blocked scenarios | 0 | 0 | None |
+- The cart exposes stable `data-test` selectors for its controls and products.
+- The required-field messages are specific and appear in an accessible alert.
+- The overview shows SauceCard #31337, Free Pony Express Delivery!, and the expected item/tax/total calculations.
+- A 390 px window reported no horizontal document overflow on the tested checkout pages.
+- The browser console recorded 401 responses from the app's external Backtrace telemetry event endpoint; no console warnings were observed. These did not block checkout testing.
 
-The four defect tests are deliberately marked expected-to-fail so the suite continues to detect the known product gaps. Thus, the final Playwright summary of **30 passed** means 30 outcomes matched the test expectations (including 12 expected failures for the four defect tests across three browsers), not that all product behavior passed. There were **0 unexpected automation failures** in the final run.
+## Automated Test Results
 
-## 2. Manual Test Results
+**Suite:** [`checkout.spec.js`](../tests/saucedemo-checkout/checkout.spec.js)  
+**Plan:** [`saucedemo-checkout-test-plan.md`](../specs/saucedemo-checkout-test-plan.md)
 
-| Scenario | Result | Observation |
-|---|---|---|
-| Cart review | **FAIL** | Product details and unit prices were shown; no cart subtotal or total was displayed. |
-| Empty information form | **PASS** | Continue displayed `First Name is required`. |
-| Missing last name | **PASS** | Continue displayed `Last Name is required`. |
-| Missing postal code | **PASS** | Continue displayed `Postal Code is required`. |
-| Invalid postal data | **FAIL** | `#$%` was accepted and the application navigated to overview. |
-| Overview and cancellation | **FAIL** | Payment, shipping, subtotal, tax, and total were visible. Cancel returned to inventory rather than cart. |
-| Order completion | **PASS** | Confirmation appeared, cart became empty, and Back Home returned to inventory. |
-| Cancel information step | **PASS** | Returned to cart with the item preserved. |
-| Authentication/empty cart | **FAIL** | Logged-out direct checkout was denied, but an empty cart could proceed to checkout information. |
-| Mobile checkout | **PASS** | At 390px controls and totals were usable without horizontal overflow. |
+The suite covers the 10 planned scenarios. Browser projects are Chromium, Firefox, and WebKit (the Safari engine).
 
-### Screenshots
+### Initial run
 
-- [Cart review](./manual-cart-review.png)
-- [Order overview](./manual-checkout-overview.png)
-- [Required-field error](./manual-required-field-error.png)
-- [Order confirmation](./manual-order-confirmation.png)
-- [Mobile checkout](./manual-mobile-checkout.png)
+The first run produced **27 passing outcomes and 3 unexpected failures**. All three failures were the authentication/empty-cart scenario timing out because it used a nonexistent `[data-test="open-menu"]` selector.
 
-## 3. Automated Test Results
+### Healing activities
 
-The suite is [`tests/saucedemo-checkout/checkout.spec.js`](../tests/saucedemo-checkout/checkout.spec.js).
+1. Replaced the nonexistent menu selector with the accessible “Open Menu” button.
+2. Corrected the logout selector to the actual “Logout” button after the intermediate run showed it was not a link.
+3. Changed checkout information entry to stable `data-test` locators and added value assertions before Continue. This addressed an intermittent WebKit form-entry failure without weakening validation assertions.
+4. Preserved acceptance assertions for the four confirmed application defects as expected failures; the tests still verify the required behavior and do not treat the defects as passing functionality.
+5. Re-ran the focused completion/authentication scenarios, then the full suite across all three browser projects.
 
-### Initial execution
+### Final run
 
-The initial Chromium run covered all **10 scenarios** and reported **6 passed, 4 failed**. Each failure matched a product behavior gap confirmed manually.
+The final run completed with exit code 0: **30 accepted outcomes, 0 unexpected failures**. There were 18 normal passes and 12 expected-failure outcomes (four product defects x three browsers).
 
-The initial cross-browser run with six workers encountered Firefox login timeouts under parallel access to the public demo. Serial execution avoided this contention.
+| Browser project | Scenarios | Passing outcomes | Expected failures | Unexpected failures |
+|---|---:|---:|---:|---:|
+| Chromium | 10 | 6 | 4 | 0 |
+| Firefox | 10 | 6 | 4 | 0 |
+| WebKit | 10 | 6 | 4 | 0 |
+| **Total** | **30** | **18** | **12** | **0** |
 
-### Step 5 follow-up execution
+## Defects Log
 
-On 2026-10-26, the full serial run first had **29 passed, 1 failed** (30 browser-test executions). The unexpected WebKit failure was `Complete order and clear cart`: after entering the checkout information, the demo displayed `First Name is required`.
+| Bug ID | Severity | Title | Expected vs. actual | Reproduction summary | Evidence |
+|---|---|---|---|---|---|
+| SCRUM-101-QA-01 | Medium | Cart total is not displayed | AC1 requires a cart total calculation; the cart shows item prices but no total/subtotal. | Add Backpack and Bike Light, open the cart, and inspect its summary. | [Cart review](./evidence/cart-review.png) |
+| SCRUM-101-QA-02 | Medium | Invalid postal value is accepted | AC5 requires invalid data to be rejected; `#$%` advances to the order overview. | Add a product, enter valid names and `#$%` as postal code, then Continue. | [Invalid postal code accepted](./evidence/invalid-postal-accepted.png) |
+| SCRUM-101-QA-03 | Medium | Empty cart can proceed to checkout | Business rule requires a non-empty cart; Checkout is enabled and opens checkout information with no items. | Remove all items, select Checkout, and observe the information page. | [Empty cart](./evidence/empty-cart-checkout-available.png) |
+| SCRUM-101-QA-04 | Low | Overview Cancel returns to inventory | Business rule says cancellation at any checkout step returns to the cart; overview Cancel navigates to inventory. | Add items, proceed to overview, and select Cancel. | [Order overview](./evidence/order-overview-valid.png) |
 
-The isolated WebKit scenario then passed twice with `--repeat-each=2`. A subsequent full serial rerun passed all 30 expected outcomes, with 10 each on Chromium, Firefox, and WebKit, and no unexpected failures. The failure was not reproducible, so no test-code changes were needed.
+These are observed test defects against the public demo application, not changes made to application code in this repository. No independent bug tracker IDs were available; the IDs above are report-local.
 
-**Healing notes:** The configured healer agent could not be invoked: although its agent file and the other QA agent files specify `model: Auto`, the agent launcher still resolved `Claude Sonnet 4.6` and rejected it as unavailable. No test-code changes were made. The isolated WebKit retry and full serial rerun were used to investigate the transient failure; the retry passed twice and the failure did not recur.
+## Test Coverage Analysis
 
-The test runner clears its configured `test-results/` output directory at startup. During this follow-up run that removed the previous report and screenshot evidence; this report and the screenshots above were restored after the final test run.
+| Acceptance criterion / rule | Manual | Automated | Coverage and result |
+|---|---|---|---|
+| AC1: Cart item details, total, and navigation | Yes | Yes, all 3 browsers | Product details and navigation verified; cart total missing (defect). |
+| AC2: Checkout information and mandatory fields | Yes | Yes, all 3 browsers | First name, last name, and postal-code required validations pass. |
+| AC3: Order overview, payment/shipping, totals, Cancel | Yes | Yes, all 3 browsers | Overview data and calculations pass; Cancel destination fails the business rule. |
+| AC4: Order completion, confirmation, and cart clearing | Yes | Yes, all 3 browsers | Passes, including Back Home navigation. |
+| AC5: Invalid checkout information | Yes | Yes, all 3 browsers | Invalid postal data is accepted (defect). |
+| Authentication rule | Yes | Yes, all 3 browsers | Direct access while logged out redirects to login. |
+| Non-empty cart rule | Yes | Yes, all 3 browsers | Empty cart is allowed to proceed (defect). |
+| Mobile checkout | Yes | Yes, all 3 browsers | Checked at 390 x 844; no horizontal overflow observed. |
 
-## 4. Defects Log
+**Gaps:** Responsive behavior was checked at one mobile viewport, not on physical devices or a broad device matrix. Browser coverage uses Chromium, Firefox, and WebKit projects; branded Chrome and physical Safari were not separately tested. No server-side order persistence or payment processing was in scope.
 
-### SCRUM-101-BUG-01 — Cart total is absent
+## Summary and Recommendations
 
-- **Severity:** Medium
-- **Description:** AC1 requires a cart total; none is displayed.
-- **Steps:** Log in, add Backpack and Bike Light, open the cart.
-- **Expected:** A total of $39.98 is displayed.
-- **Actual:** Only item details and unit prices are shown.
-- **Evidence:** [Manual cart review screenshot](./manual-cart-review.png); automated scenario `Review cart item details and total` in [`checkout.spec.js`](../tests/saucedemo-checkout/checkout.spec.js).
-- **Environment:** Saucedemo public site (`standard_user`); manual exploratory session and automated Chromium, Firefox, and WebKit runs on 2026-10-26.
+The core happy path works across the configured browsers, including order totals, successful completion, cart clearing, and return to inventory. Mandatory-field checks and unauthenticated-access handling also behave as expected. Release confidence remains limited by the four confirmed defects:
 
-### SCRUM-101-BUG-02 — Invalid postal characters are accepted
+1. Add and verify a cart subtotal/total.
+2. Validate postal-code input and block invalid values.
+3. Disable or reject checkout when the cart is empty, including direct route access.
+4. Return to the cart when Cancel is selected from the overview.
 
-- **Severity:** Medium
-- **Description:** AC5 requires invalid checkout information to be rejected.
-- **Steps:** Add an item; open Checkout; enter valid names and postal code `#$%`; select Continue.
-- **Expected:** Validation message and blocked navigation.
-- **Actual:** Application proceeds to checkout overview.
-- **Evidence:** Manual result recorded above; automated scenario `Reject invalid checkout information` in [`checkout.spec.js`](../tests/saucedemo-checkout/checkout.spec.js). No dedicated screenshot of the invalid postal-code state was retained.
-- **Environment:** Saucedemo public site (`standard_user`); manual exploratory session and automated Chromium, Firefox, and WebKit runs on 2026-10-26.
-
-### SCRUM-101-BUG-03 — Checkout is available for an empty cart
-
-- **Severity:** Medium
-- **Description:** Business rule 3 prohibits checkout with an empty cart.
-- **Steps:** Log in with an empty cart; open `/cart.html`; select Checkout.
-- **Expected:** Checkout is disabled or the attempt is blocked.
-- **Actual:** Checkout information form opens.
-- **Evidence:** Manual authentication/empty-cart result recorded above; automated scenario `Prevent checkout without authentication or cart items` in [`checkout.spec.js`](../tests/saucedemo-checkout/checkout.spec.js). No dedicated empty-cart screenshot was retained.
-- **Environment:** Saucedemo public site; unauthenticated and `standard_user` sessions, automated Chromium, Firefox, and WebKit runs on 2026-10-26.
-
-### SCRUM-101-BUG-04 — Overview cancellation returns to inventory
-
-- **Severity:** Low
-- **Description:** Business rule 5 says cancellation at any checkout step returns to the cart.
-- **Steps:** Add an item; complete checkout information; select Cancel on overview.
-- **Expected:** Cart page is displayed with the item preserved.
-- **Actual:** Inventory page is displayed; item remains in cart.
-- **Evidence:** [Manual checkout overview screenshot](./manual-checkout-overview.png); automated scenario `Review order overview and cancel checkout to the cart` in [`checkout.spec.js`](../tests/saucedemo-checkout/checkout.spec.js).
-- **Environment:** Saucedemo public site (`standard_user`); manual exploratory session and automated Chromium, Firefox, and WebKit runs on 2026-10-26.
-
-## 5. Test Coverage Analysis
-
-| Requirement | Coverage | Result |
-|---|---|---|
-| AC1: Cart details, total, continue/checkout | Manual and automated | Partial; cart total missing |
-| AC2: Mandatory checkout fields | Manual and automated | Pass |
-| AC3: Overview values and cancel/finish | Manual and automated | Amounts pass; cancel destination differs |
-| AC4: Confirmation and Back Home | Manual and automated | Pass |
-| AC5: Invalid information | Manual and automated | Fail; invalid postal value accepted |
-| Authentication required | Manual and automated | Pass |
-| Non-empty cart required | Manual and automated | Fail |
-| Cart cleared after completion | Manual and automated | Pass |
-| Cancel returns to cart | Manual and automated | Partial; overview cancel returns to inventory |
-| Mobile layout | Manual and automated | Pass at tested 390px viewport |
-
-One Playwright suite (`SCRUM-101 checkout flow`) contains 10 cases; final per-browser execution was 10 cases each on Chromium, Firefox, and WebKit. WebKit was tested as the Safari engine; no separate physical Safari browser was used. Further viewport sizes, browser/device combinations, postal-code boundary formats, and a retained screenshot for each defect remain useful additional coverage.
-
-## 6. Summary and Recommendations
-
-The standard purchase path and required-field checks work in the tested browser engines, but four acceptance/business-rule defects remain. Address the four product defects before considering SCRUM-101 complete. Keep their assertions in place; remove the expected-failure markers once the application is corrected. Continue serial execution against the shared public demo account to reduce login contention. Capture and retain defect-specific screenshots, especially for invalid postal input and empty-cart checkout, and add broader mobile/browser and postal-code boundary coverage.
-
-## 7. Commit and Push Status
-
-The target repository `https://github.com/ivarjoshi/AgenticAI_E2E_QA_Automation.git` already exists on branch `main`. The local workspace has no `.git` directory, so the requested commit was performed through the GitHub MCP server. The report, user story, test plan, and checkout automation script are included in the commit. The five PNG screenshots were not uploaded because the available GitHub MCP write tool accepts text file content only and no binary-upload tool was available.
+After these fixes, rerun the full suite in all three browser projects and add broader device/viewport coverage. The checkout tests intentionally retain assertions for the unmet requirements so the defects remain visible in subsequent runs.

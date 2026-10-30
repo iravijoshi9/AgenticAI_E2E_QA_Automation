@@ -15,21 +15,36 @@ async function addProduct(page, slug) {
 }
 
 async function openCart(page) {
-  await page.getByRole('button', { name: /Cart/ }).click();
+  await page.locator('[data-test="shopping-cart-link"]').click();
   await expect(page).toHaveURL(/\/cart\.html$/);
 }
 
 async function openCheckout(page) {
   await openCart(page);
-  await page.getByRole('button', { name: 'Checkout' }).click();
+  await page.locator('[data-test="checkout"]').click();
   await expect(page).toHaveURL(/\/checkout-step-one\.html$/);
 }
 
 async function completeInformation(page, postalCode = '94043') {
-  await page.getByPlaceholder('First Name').fill('Ravi');
-  await page.getByPlaceholder('Last Name').fill('Joshi');
-  await page.getByPlaceholder('Zip/Postal Code').fill(postalCode);
-  await page.getByRole('button', { name: 'Continue' }).click();
+  const firstName = page.locator('[data-test="firstName"]');
+  const lastName = page.locator('[data-test="lastName"]');
+  const zipCode = page.locator('[data-test="postalCode"]');
+
+  await firstName.fill('Ravi');
+  await expect(firstName).toHaveValue('Ravi');
+  await lastName.fill('Joshi');
+  await expect(lastName).toHaveValue('Joshi');
+  await zipCode.fill(postalCode);
+  await expect(zipCode).toHaveValue(postalCode);
+  await page.locator('[data-test="continue"]').click();
+}
+
+async function expectNoHorizontalOverflow(page) {
+  const dimensions = await page.evaluate(() => ({
+    viewportWidth: document.documentElement.clientWidth,
+    documentWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.documentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
 }
 
 test.describe('SCRUM-101 checkout flow', () => {
@@ -47,8 +62,7 @@ test.describe('SCRUM-101 checkout flow', () => {
   });
 
   test('Review cart item details and total', async ({ page }) => {
-    test.fail(true, 'AC1 defect: the cart displays item details but no total calculation.');
-    // Add two products and inspect the cart contents and price calculation.
+    test.fail(true, 'AC1 defect: the cart does not display the required total calculation.');
     await addProduct(page, 'sauce-labs-backpack');
     await addProduct(page, 'sauce-labs-bike-light');
     await openCart(page);
@@ -61,9 +75,11 @@ test.describe('SCRUM-101 checkout flow', () => {
 
     await page.getByRole('button', { name: 'Continue Shopping' }).click();
     await expect(page).toHaveURL(/\/inventory\.html$/);
+    await expect(page.getByRole('button', { name: /Cart, 2 items/ })).toBeVisible();
     await openCart(page);
     await expect(page.getByText('Sauce Labs Backpack')).toBeVisible();
-    await page.getByRole('button', { name: 'Checkout' }).click();
+    await expect(page.getByText('Sauce Labs Bike Light')).toBeVisible();
+    await page.locator('[data-test="checkout"]').click();
     await expect(page).toHaveURL(/\/checkout-step-one\.html$/);
   });
 
@@ -71,7 +87,7 @@ test.describe('SCRUM-101 checkout flow', () => {
     await addProduct(page, 'sauce-labs-backpack');
     await openCheckout(page);
 
-    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.locator('[data-test="continue"]').click();
     await expect(page.getByRole('alert')).toContainText('First Name is required');
     await expect(page).toHaveURL(/\/checkout-step-one\.html$/);
   });
@@ -81,7 +97,7 @@ test.describe('SCRUM-101 checkout flow', () => {
     await openCheckout(page);
     await page.getByPlaceholder('First Name').fill('Ravi');
 
-    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.locator('[data-test="continue"]').click();
     await expect(page.getByRole('alert')).toContainText('Last Name is required');
     await expect(page).toHaveURL(/\/checkout-step-one\.html$/);
   });
@@ -92,13 +108,13 @@ test.describe('SCRUM-101 checkout flow', () => {
     await page.getByPlaceholder('First Name').fill('Ravi');
     await page.getByPlaceholder('Last Name').fill('Joshi');
 
-    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.locator('[data-test="continue"]').click();
     await expect(page.getByRole('alert')).toContainText('Postal Code is required');
     await expect(page).toHaveURL(/\/checkout-step-one\.html$/);
   });
 
   test('Reject invalid checkout information', async ({ page }) => {
-    test.fail(true, 'AC5 defect: the application accepts a postal code containing only special characters.');
+    test.fail(true, 'AC5 defect: a postal code containing only special characters is accepted.');
     await addProduct(page, 'sauce-labs-backpack');
     await openCheckout(page);
     await completeInformation(page, '#$%');
@@ -108,7 +124,7 @@ test.describe('SCRUM-101 checkout flow', () => {
   });
 
   test('Review order overview and cancel checkout to the cart', async ({ page }) => {
-    test.fail(true, 'Business-rule defect: Cancel on the overview returns to inventory instead of the cart.');
+    test.fail(true, 'Business-rule defect: overview Cancel navigates to inventory instead of the cart.');
     await addProduct(page, 'sauce-labs-backpack');
     await addProduct(page, 'sauce-labs-bike-light');
     await openCheckout(page);
@@ -121,7 +137,7 @@ test.describe('SCRUM-101 checkout flow', () => {
     await expect(page.getByText('Tax: $3.20')).toBeVisible();
     await expect(page.getByText('Total: $43.18')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.locator('[data-test="cancel"]').click();
     await expect(page).toHaveURL(/\/cart\.html$/);
     await expect(page.getByText('Sauce Labs Backpack')).toBeVisible();
   });
@@ -133,27 +149,27 @@ test.describe('SCRUM-101 checkout flow', () => {
     await completeInformation(page);
 
     await expect(page).toHaveURL(/\/checkout-step-two\.html$/);
-    await page.getByRole('button', { name: 'Finish' }).click();
+    await page.locator('[data-test="finish"]').click();
     await expect(page).toHaveURL(/\/checkout-complete\.html$/);
     await expect(page.getByRole('heading', { name: 'Thank you for your order!' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Back Home' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Cart, empty' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Back Home' }).click();
+    await page.locator('[data-test="back-to-products"]').click();
     await expect(page).toHaveURL(/\/inventory\.html$/);
   });
 
   test('Cancel checkout information and preserve cart', async ({ page }) => {
     await addProduct(page, 'sauce-labs-backpack');
     await openCheckout(page);
-    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.locator('[data-test="cancel"]').click();
 
     await expect(page).toHaveURL(/\/cart\.html$/);
     await expect(page.getByText('Sauce Labs Backpack')).toBeVisible();
   });
 
   test('Prevent checkout without authentication or cart items', async ({ page }) => {
-    test.fail(true, 'Business-rule defect: an empty cart still allows navigation to checkout information.');
+    test.fail(true, 'Business-rule defect: checkout from an empty cart is not blocked.');
     await page.getByRole('button', { name: 'Open Menu' }).click();
     await page.getByRole('button', { name: 'Logout' }).click();
     await page.goto(`${baseUrl}/checkout-step-one.html`);
@@ -162,7 +178,7 @@ test.describe('SCRUM-101 checkout flow', () => {
 
     await logIn(page);
     await openCart(page);
-    await page.getByRole('button', { name: 'Checkout' }).click();
+    await page.locator('[data-test="checkout"]').click();
     await expect(page).toHaveURL(/\/cart\.html$/);
   });
 
@@ -171,11 +187,7 @@ test.describe('SCRUM-101 checkout flow', () => {
     await addProduct(page, 'sauce-labs-backpack');
     await openCheckout(page);
 
-    const formDimensions = await page.evaluate(() => ({
-      viewportWidth: document.documentElement.clientWidth,
-      documentWidth: document.documentElement.scrollWidth,
-    }));
-    expect(formDimensions.documentWidth).toBeLessThanOrEqual(formDimensions.viewportWidth);
+    await expectNoHorizontalOverflow(page);
     await expect(page.getByPlaceholder('First Name')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible();
 
@@ -183,5 +195,11 @@ test.describe('SCRUM-101 checkout flow', () => {
     await expect(page).toHaveURL(/\/checkout-step-two\.html$/);
     await expect(page.getByText('Total: $32.39')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+
+    await page.locator('[data-test="finish"]').click();
+    await expect(page.getByRole('heading', { name: 'Thank you for your order!' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Back Home' })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
   });
 });

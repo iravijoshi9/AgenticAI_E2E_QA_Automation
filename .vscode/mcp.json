@@ -1,0 +1,32 @@
+{
+  "servers": {
+    "playwright-test": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "playwright",
+        "run-test-mcp-server"
+      ]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${input:github_qa-agent-mcp}"
+      }
+    }
+  },
+  "inputs": [{
+      "type": "promptString",
+      "id": "github_qa-agent-mcp",    
+      "description": "GitHub PAT",
+      "password": true
+    }]
+}
